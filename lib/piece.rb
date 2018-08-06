@@ -1,5 +1,5 @@
 class Piece
-  @@PIECES_SYMBOLS = { # [white, black]
+  PIECES_SYMBOLS = { # [white, black]
     :king   => {:white => "♔", :black => "♚"},
     :queen  => {:white => "♕", :black => "♛"},
     :rook   => {:white => "♖", :black => "♜"},
@@ -10,7 +10,7 @@ class Piece
 
   # [up, right]
   # negative means [down, left]
-  @@PIECES_MOVES = {
+  PIECES_MOVES = {
     :king   => [[ 1, 0],
                 [ 1, 1],
                 [ 0, 1],
@@ -52,15 +52,16 @@ class Piece
   }
 
   attr_accessor :moves
-  attr_reader :team, :symbol
-  attr_reader :white, :black # teams
+  attr_reader :team, :type, :symbol, :PIECES_MOVES, :PIECES_SYMBOLS
+  # attr_reader :white, :black # teams
 
   def self.create_piece(colour, piece)
-    Piece.new(colour, @@PIECES_SYMBOLS[piece][colour], @@PIECES_MOVES[piece])
+    Piece.new(colour, piece, PIECES_SYMBOLS[piece][colour], PIECES_MOVES[piece])
   end
 
-  def initialize(team, symbol, moves)
+  def initialize(team, type, symbol, moves)
     @team = team
+    @type = type
     @symbol = symbol
     @moves = moves
   end

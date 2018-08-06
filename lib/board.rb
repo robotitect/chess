@@ -24,7 +24,7 @@ class Board
                            Piece.create_piece(:black, :knight),
                            Piece.create_piece(:black, :rook)]
     # second row: black pawns
-    new_board.board[1]  = Array.new(8) { Piece.create_piece(:black, :pawn) }
+    # new_board.board[1]  = Array.new(8) { Piece.create_piece(:black, :pawn) }
     # second-last row: white pawns
     new_board.board[-2] = Array.new(8) { Piece.create_piece(:white, :pawn) }
     # last row: white pieces
@@ -110,14 +110,48 @@ class Board
     print "—".center(@board.length*5 + 1, "—")
   end
 
+  # moves a piece to the given location
+  def move_piece(from_algeb, to_algeb)
+
+  end
+
   # TODO determine the valid moves for a piece in a specific position
+  # returns a list of algebraic coordinates
+  # TODO remove the diagonal moves from pawns unless it's appropriate
+  # TODO Castling
   def piece_moves(square_algeb)
     # throw nil error
-    coords = algebraic_to_coords[square_algeb]
-    row = coords.first
-    col = coords.last
+    row, col = algebraic_to_coords[square_algeb]
     current_piece = board[row][col]
-    puts current_piece.to_str
-    p current_piece.moves
+    # goes through each direction, multiplies it by a number
+    # to see how *far* we can go
+    to_return = []
+    current_piece.moves.each do |direction|
+      scalar_range = case(current_piece.type)
+      when :king, :knight, :pawn
+        [1]
+      when :bishop, :rook, :queen
+        [*1..8]
+      end
+      scalar_range.each do |scalar|
+        current_move = direction.map { |element| element * scalar }
+        row_change, col_change = current_move
+        new_row, new_col = row + row_change, col + col_change
+        # check not out of range
+        if(new_row.between?(0, 7) && new_col.between?(0, 7))
+          if(board[new_row][new_col].nil? ||
+             board[new_row][new_col].team != current_piece.team)
+            to_return << algebraic_to_coords.key([new_row, new_col])            
+            if(!(board[new_row][new_col].nil?) &&
+                 board[new_row][new_col].team != current_piece.team)
+              break
+            end
+          end
+        else # stop looking "further" out in this direction
+          next
+        end
+      end
+    end
+    to_return
   end
 end
