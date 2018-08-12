@@ -8,29 +8,29 @@ class Piece
     :pawn   => {:white => "♙", :black => "♟"},
   }
 
-  # [up, right]
-  # negative means [down, left]
+  # [down, right]
+  # negative means [up, left]
   PIECES_MOVES = {
-    :king   => [[ 1, 0],
-                [ 1, 1],
-                [ 0, 1],
-                [-1, 1],
-                [-1, 0],
-                [-1,-1],
-                [ 0,-1],
-                [ 1,-1]],
-    :queen  => [[ 1, 0],
-                [ 1, 1],
-                [ 0, 1],
-                [-1, 1],
-                [-1, 0],
-                [-1,-1],
-                [ 0,-1],
-                [ 1,-1]],
-    :rook   => [[ 1, 0],
-                [ 0, 1],
-                [-1, 0],
-                [ 0,-1]],
+    :king   => [[ 1,  0],
+                [ 1,  1],
+                [ 0,  1],
+                [-1,  1],
+                [-1,  0],
+                [-1, -1],
+                [ 0, -1],
+                [ 1, -1]],
+    :queen  => [[ 1,  0],
+                [ 1,  1],
+                [ 0,  1],
+                [-1,  1],
+                [-1,  0],
+                [-1, -1],
+                [ 0, -1],
+                [ 1, -1]],
+    :rook   => [[ 1,  0],
+                [ 0,  1],
+                [-1,  0],
+                [ 0, -1]],
     :knight => [[ 1,  2],
                 [ 2,  1],
                 [ 2, -1],
@@ -39,19 +39,19 @@ class Piece
                 [-2, -1],
                 [-2,  1],
                 [-1,  2]],
-    :bishop => [[ 1, 1],
-                [-1, 1],
-                [-1,-1],
-                [ 1,-1]],
-    :pawn   => [[ 1, 0],
-                [ 1, 1],
-                [-1, 1],
-                [-1, 0],
-                [-1,-1],
-                [ 1,-1]]
+    :bishop => [[ 1,  1],
+                [-1,  1],
+                [-1, -1],
+                [ 1, -1]],
+    :pawn   => [[ 1,  0],
+                [ 1,  1],
+                [-1,  1],
+                [-1,  0],
+                [-1, -1],
+                [ 1, -1]]
   }
 
-  attr_accessor :moves
+  attr_accessor :moves, :move_history
   attr_reader :team, :type, :symbol, :PIECES_MOVES, :PIECES_SYMBOLS
   # attr_reader :white, :black # teams
 
@@ -64,6 +64,7 @@ class Piece
     @type = type
     @symbol = symbol
     @moves = moves
+    @move_history = []
   end
 
   def to_s
