@@ -8,6 +8,7 @@ I'm leaving it incomplete for now with the following features unimplemented:
 * en passant
 * stalemate
 * ai 
+* saving
 
 Love and peace,
 
