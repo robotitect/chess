@@ -1,6 +1,6 @@
-class Board
-  require_relative "piece.rb"
+require_relative "piece.rb"
 
+class Board
   attr_accessor :board, :left_offset, :algebraic_to_coords, :x_coords, :y_coords
 
   def self.create_board
@@ -59,6 +59,14 @@ class Board
   def initialize
   end
 
+  def board_iterate
+    @board.each_with_index do |row, i|
+      row.each_with_index do |square, j|
+        yield(square, i, j)
+      end
+    end
+  end
+
   def print_board
     square_size = 4
     # @left_offset = 9
@@ -112,6 +120,8 @@ class Board
 
   # moves a piece to the given location
   # updates move history of the piece
+  # TODO don't allow capturing the king
+  # TODO don't allow moving to in check or when in check to force getting out
   def move_piece(from_algeb, to_algeb)
     moved = false
     until(moved)
@@ -123,6 +133,8 @@ class Board
         board[row_old][col_old] = nil
         piece.move_history << [from_algeb, to_algeb]
         moved = true
+        # TODO add a special case for the en passant move
+        #      removes the enemy pawn as well
       end
     end
   end
@@ -136,6 +148,7 @@ class Board
     # goes through each direction, multiplies it by a number
     # to see how *far* we can go
     to_return = []
+    # puts current_piece
     potential_moves = current_piece.moves
     case(current_piece.type)
     when(:pawn)
@@ -171,21 +184,7 @@ class Board
     end
 
     # TODO castling
-    case(current_piece.type)
-    when :king
-      rooks = case(current_piece.team)
-      when :white
-        ["a1", "a8"]
-      when :black
-        ["h1", "h8"]
-      end
-      rooks.each do |square|
-        to_return << castling_moves(square)[:king]
-      end
-    when :rook
-      p to_return
-      to_return << castling_moves(square_algeb)[:rook]
-    end
+
     to_return
   end
 
@@ -238,6 +237,9 @@ class Board
         end
 
         # TODO en passant : check pawn.move_history
+        # check if the moving pawn is in the right row
+        # check if the moved pawn just did the 2 square move
+        # add the en passant move
 
       when(:black)
         if((row + 1).between?(0, 7))
@@ -348,6 +350,78 @@ class Board
       return nil
     end
     to_return
+  end
+
+  # returns a hash mapping the pieces to their coordinates
+  def team_pieces(team)
+    to_return = {}
+    to_return.compare_by_identity
+    board_iterate do |square, row_coord, col_coord|
+      if(!square.nil? && square.team == team)
+        to_return[square] = algebraic_to_coords.key([row_coord, col_coord])
+      end
+    end
+    to_return
+  end
+
+  # returns hash of *white* pieces => algebraic coordinates
+  def white_pieces
+    team_pieces(:white)
+  end
+
+  # returns hash of *black* pieces => algebraic coordinates
+  def black_pieces
+    team_pieces(:black)
+  end
+
+  # returns whether or not the team is in check
+  def in_check?(team)
+    case(team)
+    when(:black)
+      # HACK
+      king, king_square_algeb = black_pieces.find { |piece, square| piece.type == :king }
+      white_pieces.each do |piece, square_algeb|
+        if(piece_moves(square_algeb).include?(king_square_algeb))
+          return true
+        end
+      end
+    when(:white)
+      king, king_square_algeb = white_pieces.find { |piece, square| piece.type == :king }
+      black_pieces.each do |piece, square_algeb|
+        if(piece_moves(square_algeb).include?(king_square_algeb))
+          return true
+        end
+      end
+    end
+    return false
+  end
+
+  # returns whether or not the team has been checkmated
+  def checkmated?(team)
+    defending_pieces = case(team)
+    when(:white)
+      white_pieces
+    when(:black)
+      black_pieces
+    end
+
+    # go through all possible moves of all pieces of the defending team
+    puts defending_pieces.length
+    defending_pieces.each do |piece, square_algeb|
+      # puts "#{piece}: #{square_algeb}"
+      # p piece_moves(square_algeb)
+      piece_moves(square_algeb).each do |move|
+        test_board = Marshal.load(Marshal.dump(self))
+        # if moving the piece were to result in a not check scenario,
+        # return false as the defending team is *not* checkmated
+        test_board.move_piece(square_algeb, move)
+        unless(test_board.in_check?(team))
+          return false
+        end
+      end
+    end
+
+    return true
   end
 end
 

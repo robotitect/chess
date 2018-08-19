@@ -70,4 +70,12 @@ class Piece
   def to_s
     @symbol
   end
+
+  def ==(other_piece)
+    if(@type == other_piece.type &&
+       @team == other_piece.team)
+       true
+     end
+     false
+  end
 end
