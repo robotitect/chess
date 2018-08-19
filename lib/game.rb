@@ -1,5 +1,6 @@
 require_relative "board.rb"
 require_relative "cpu_player.rb"
+require_relative "piece.rb"
 require_relative "player.rb"
 
 class Game
@@ -38,7 +39,31 @@ class Game
             puts "Please select a destination!"
             to_algeb = gets.chomp.downcase
             board.move_piece(from_algeb, to_algeb)
-          rescue
+            row, col = board.algebraic_to_coords[to_algeb]
+            if(board.board[row][col].type == :pawn &&
+                ((player_team == :white && to_algeb[-1] == "8") ||
+                 (player_team == :black && to_algeb[-1] == "1")))
+              begin
+                puts "What would you like to swap the pawn for?"
+                piece = gets.chomp.downcase
+                new_piece = case(piece)
+                when("rook")
+                  :rook
+                when("queen")
+                  :queen
+                when("knight")
+                  :knight
+                when("bishop")
+                  :bishop
+                else
+                  raise
+                end
+                board.board[row][col] = Piece.create_piece(player_team, new_piece)
+              rescue
+                "Invalid piece type"
+                retry
+             end
+          rescue :invalid_move
             puts "Invalid move"
             retry
           end

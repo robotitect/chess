@@ -120,25 +120,65 @@ class Board
 
   # moves a piece to the given location
   # updates move history of the piece
-  # TODO don't allow capturing the king
-  # TODO don't allow moving to in check or when in check to force getting out
   def move_piece(from_algeb, to_algeb)
     moved = false
-    until(moved)
-      if(piece_moves(from_algeb).include?(to_algeb))
-        row_old, col_old = algebraic_to_coords[from_algeb]
-        row_new, col_new = algebraic_to_coords[to_algeb]
-        piece = board[row_old][col_old]
-        board[row_new][col_new] = board[row_old][col_old]
-        board[row_old][col_old] = nil
-        piece.move_history << [from_algeb, to_algeb]
-        moved = true
-        # TODO add a special case for the en passant move
-        #      removes the enemy pawn as well
-      else
-        raise
+    # until(moved)
+    if(piece_moves(from_algeb).include?(to_algeb))
+      row_old, col_old = algebraic_to_coords[from_algeb]
+      row_new, col_new = algebraic_to_coords[to_algeb]
+      piece = board[row_old][col_old]
+      taken_piece = board[row_new][col_new]
+      board[row_new][col_new] = board[row_old][col_old]
+      board[row_old][col_old] = nil
+      piece.move_history << [from_algeb, to_algeb]
+      moved = true
+
+      # special case: castling
+      p piece.type
+      puts from_algeb
+      puts to_algeb
+      # puts "#{(from_algeb[-1]. - to_algeb[-1].to_i)}"
+      if(piece.type == :king && (col_old - col_new).abs > 1)
+        if(col_new == 2)
+          rook_square = algebraic_to_coords.key([row_old, 0])
+          rook_ending = algebraic_to_coords.key([row_old, 3])
+          # move_piece(rook_square, rook_ending)
+          # manually move the rook
+          board[row_old][3] = board[row_old][0]
+          board[row_old][0] = nil
+        elsif(col_new == 6)
+          rook_square = algebraic_to_coords.key([row_old, 7])
+          rook_ending = algebraic_to_coords.key([row_old, 5])
+          # move_piece(rook_square, rook_ending)
+          # manually move the rook
+          board[row_old][5] = board[row_old][7]
+          board[row_old][7] = nil
+        end
       end
+
+      # TODO add a special case for the en passant move
+      #      removes the enemy pawn as well
+
+
+      current_team = piece.team
+      if(in_check?(current_team) || taken_piece.type == :king)
+        # don't allow moving to in check or when in check to force getting out
+        if(in_check?(current_team))
+          puts "Cannot move into check / need to move out of check"
+        end
+        # don't allow capturing the king
+        if(taken_piece.type == :king)
+          puts "Cannot capture the king"
+        end
+        board[row_new][col_new] = taken_piece
+        board[row_old][col_old] = piece
+        piece.move_history.pop
+        moved = false
+      end
+    else
+      raise :invalid_move
     end
+    # end
   end
 
   # returns a list of algebraic coordinates
@@ -186,7 +226,11 @@ class Board
     end
 
     # TODO castling
-
+    # p current_piece.type
+    if(current_piece.type == :king)
+      to_return << castling_moves(square_algeb)
+      to_return.flatten!
+    end
     to_return
   end
 
@@ -287,70 +331,75 @@ class Board
   # TODO and the King must not move through check in order to complete the move."
   # TODO remove all the moves for the rook, only need the ones for the king
   def castling_moves(square_algeb)
+    to_return = []
     row, col = algebraic_to_coords[square_algeb]
     piece = board[row][col]
-    to_return = {}
-    if(piece.type == :rook)
-      case(piece.team)
-      when(:black)
-        king_orginal_row, king_orginal_col = algebraic_to_coords["e8"]
-        potential_king = board[king_orginal_row][king_orginal_col]
-        # check the given rook
-        if(potential_king.type == :king && potential_king.move_history.empty? &&
-            piece.move_history.empty?)
-          # this is an array of squares horizontally between the given rook and the king
-          squares_in_between = []
-          start_col, end_col = case(square_algeb)
-          when("a8")
-            [0, 4]
-          when("h8")
-            [4, 7]
-          end
-          [*start_col..end_col].each do |col|
-            squares_in_between << board[king_orginal_row][col]
-          end
-
-          if(squares_in_between[1..-2].all? { |x| x.nil? })
-            to_return[:rook], to_return[:king] = case(square_algeb)
-            when("a8")
-              ["d8", "c8"]
-            when("h8")
-              ["g8", "f8"]
-            end
-          end
-        end
-
+    # puts piece
+    if(!piece.nil? && piece.type == :king && piece.move_history.empty?)
+      rooks = case(piece.team)
       when(:white)
-        king_orginal_col, king_orginal_row = algebraic_to_coords["e1"]
-        potential_king = board[king_orginal_row][king_orginal_col]
-        # check the given rook
-        if(potential_king.type == :king && potential_king.move_history.empty? &&
-            piece.move_history.empty?)
-          # this is an array of squares horizontally between the given rook and the king
-          squares_in_between = []
-          start_col, end_col = case(square_algeb)
-          when("a1")
-            [0, 4]
-          when("h1")
-            [4, 7]
+        ["a1", "h1"]
+      when(:black)
+        ["a8", "h8"]
+      end
+
+      rooks.each do |rook_square|
+        rook_row, rook_col = algebraic_to_coords[rook_square]
+        possible_rook = board[rook_row][rook_col]
+        if(!possible_rook.nil? && possible_rook.type == :rook && possible_rook.move_history.empty?)
+          new_king_col = case(rook_square[0])
+          when("a")
+            2
+          when("h")
+            6
           end
-          [*start_col..end_col].each do |col|
-            squares_in_between << board[king_orginal_row][col]
+          new_king_square = algebraic_to_coords.key([row, new_king_col])
+          # puts new_king_square
+
+          # check for no obstruction
+          case(rook_square[0])
+          when("a")
+            unless(board[row][1].nil? && board[row][2].nil? && board[row][3].nil?)
+              # puts "#{board[row][1].nil? && board[row][2].nil? && board[row][3].nil?}"
+              next
+            end
+          when("h")
+            unless(board[row][5].nil? && board[row][6].nil?)
+              next
+            end
           end
 
-          if(squares_in_between[1..-2].all? { |x| x.nil? })
-            to_return[:rook], to_return[:king] = case(square_algeb)
-            when("a1")
-              ["d1", "c1"]
-            when("h1")
-              ["g1", "f1"]
-            end
+          # TODO check that going through the squares doesn't lead to check
+          no_check = true
+          # rook_moves, king_moves = case(rook_square[0])
+          # when("a")
+          #   (piece.team == :white ? [["b1", "c1", "d1"], ["c1", "d1"]] : [["b8", "c8", "d8"], ["c8", "d8"]])
+          # when("h")
+          #   (piece.team == :white ? [["g1", "f1"], ["g1"]] : [["g8", "f8"], ["g8"]])
+          # end
+          # # [rook moves, king_moves]
+          # [rook_moves, king_moves].each_with_index do |move_set, piece_index|
+          #   move_set.each do |move|
+          #     test_board = Marshal.load(Marshal.dump(self))
+          #     start_square = (piece_index == 0 ? rook_square : square_algeb)
+          #     old_row, old_col = algebraic_to_coords[start_square]
+          #     new_row, new_col = algebraic_to_coords[move]
+          #     piece = test_board.board[old_row][old_col]
+          #     test_board.board[old_row][old_col] = nil
+          #     test_board.board[new_row][new_col] = piece
+          #     if(test_board.in_check?(piece.team))
+          #       no_check = false
+          #     end
+          #   end
+          # end
+
+          if(no_check)
+            to_return << new_king_square
           end
         end
       end
-    else
-      return nil
     end
+    # p to_return
     to_return
   end
 

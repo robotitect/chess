@@ -93,12 +93,31 @@ describe Board do
                           Piece.create_piece(:white, :rook)]
       end
 
-      xexample "e1" do
-        expect(board.piece_moves("e1")).to match_array(["d1", "c1", "f1", "g1"])
+      example_group "e1" do
+        example "e1" do
+          board.print_board
+          expect(board.piece_moves("e1")).to match_array(["d1", "c1", "f1", "g1"])
+        end
+
+        example "moving e1" do
+          board.move_piece("e1", "g1")
+          board.print_board
+          rook_expected_row, rook_expected_col = board.algebraic_to_coords["f1"]
+          expect(board.board[rook_expected_row][rook_expected_col].type).to eql(:rook)
+        end
       end
 
-      xexample "e8" do
-        expect(board.piece_moves("e8")).to match_array(["d8", "c8", "f8", "g8"])
+      example_group "e8" do
+        example "e8" do
+          expect(board.piece_moves("e8")).to match_array(["d8", "c8", "f8", "g8"])
+        end
+
+        example "moving e8" do
+          board.move_piece("e8", "c8")
+          board.print_board
+          rook_expected_row, rook_expected_col = board.algebraic_to_coords["d8"]
+          expect(board.board[rook_expected_row][rook_expected_col].type).to eql(:rook)
+        end
       end
     end
   end
