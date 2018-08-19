@@ -135,6 +135,8 @@ class Board
         moved = true
         # TODO add a special case for the en passant move
         #      removes the enemy pawn as well
+      else
+        raise
       end
     end
   end
@@ -406,7 +408,7 @@ class Board
     end
 
     # go through all possible moves of all pieces of the defending team
-    puts defending_pieces.length
+    # puts defending_pieces.length
     defending_pieces.each do |piece, square_algeb|
       # puts "#{piece}: #{square_algeb}"
       # p piece_moves(square_algeb)
